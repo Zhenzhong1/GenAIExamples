@@ -48,6 +48,7 @@ RERANK_SERVER_PORT = int(os.getenv("RERANK_SERVER_PORT", 80))
 LLM_SERVER_HOST_IP = os.getenv("LLM_SERVER_HOST_IP", "0.0.0.0")
 LLM_SERVER_PORT = int(os.getenv("LLM_SERVER_PORT", 80))
 LLM_MODEL = os.getenv("LLM_MODEL", "Intel/neural-chat-7b-v3-3")
+LLM_PROMPT = os.getenv("LLM_PROMPT", None)
 
 
 def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **kwargs):
@@ -63,8 +64,11 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
         # convert TGI/vLLM to unified OpenAI /v1/chat/completions format
         next_inputs = {}
         next_inputs["model"] = LLM_MODEL
-        next_inputs["messages"] = [{"role": "user", "content": inputs["inputs"]}]
-        print('LLM INPUT -----------------------------', next_inputs['messages'])
+        if LLM_PROMPT is None:
+            next_inputs["messages"] = [{"role": "user", "content": inputs["inputs"]}]
+        else:
+            next_inputs['messages'] = [{"role": "user", "content": LLM_PROMPT}]
+            
         next_inputs["max_tokens"] = llm_parameters_dict["max_tokens"]
         next_inputs["top_p"] = llm_parameters_dict["top_p"]
         next_inputs["stream"] = inputs["streaming"]
