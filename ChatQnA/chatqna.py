@@ -64,6 +64,7 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
         next_inputs = {}
         next_inputs["model"] = LLM_MODEL
         next_inputs["messages"] = [{"role": "user", "content": inputs["inputs"]}]
+        print('LLM INPUT -----------------------------', next_inputs['messages'])
         next_inputs["max_tokens"] = llm_parameters_dict["max_tokens"]
         next_inputs["top_p"] = llm_parameters_dict["top_p"]
         next_inputs["stream"] = inputs["streaming"]
@@ -155,28 +156,55 @@ def align_outputs(self, data, cur_node, inputs, runtime_graph, llm_parameters_di
 
     return next_data
 
-
 def align_generator(self, gen, **kwargs):
+    def split_lines(line):
+        """
+        Split line into individual `data:` segments if multiple `data:` sections exist.
+        """
+        parts = line.split("data:")
+        return [f"data:{part.strip()}\n\n" for part in parts if part.strip()]
     # openai reaponse format
     # b'data:{"id":"","object":"text_completion","created":1725530204,"model":"meta-llama/Meta-Llama-3-8B-Instruct","system_fingerprint":"2.0.1-native","choices":[{"index":0,"delta":{"role":"assistant","content":"?"},"logprobs":null,"finish_reason":null}]}\n\n'
     for line in gen:
         line = line.decode("utf-8")
-        start = line.find("{")
-        end = line.rfind("}") + 1
+        
+        if line.count("data:") > 1:
+            split_data = split_lines(line)
+            
+            for part in split_data:
+                print("split_data-------------", part)
+                start = part.find("{")
+                end = part.rfind("}") + 1
+                
+                json_str = part[start:end]
+                try:
+                    # sometimes yield empty chunk, do a fallback here
+                    json_data = json.loads(json_str)
+                    if (
+                        json_data["choices"][0]["finish_reason"] != "eos_token"
+                        and "content" in json_data["choices"][0]["delta"]
+                    ):
+                        yield f"data: {repr(json_data['choices'][0]['delta']['content'].encode('utf-8'))}\n\n"
+                except Exception as e:
+                    yield f"data: {repr(json_str.encode('utf-8'))}\n\n"
+        else:
+            print("line-------------", line)
+            start = line.find("{")
+            end = line.rfind("}") + 1
 
-        json_str = line[start:end]
-        try:
-            # sometimes yield empty chunk, do a fallback here
-            json_data = json.loads(json_str)
-            if (
-                json_data["choices"][0]["finish_reason"] != "eos_token"
-                and "content" in json_data["choices"][0]["delta"]
-            ):
-                yield f"data: {repr(json_data['choices'][0]['delta']['content'].encode('utf-8'))}\n\n"
-        except Exception as e:
-            yield f"data: {repr(json_str.encode('utf-8'))}\n\n"
+            json_str = line[start:end]
+            try:
+                # sometimes yield empty chunk, do a fallback here
+                json_data = json.loads(json_str)
+                if (
+                    json_data["choices"][0]["finish_reason"] != "eos_token"
+                    and "content" in json_data["choices"][0]["delta"]
+                ):
+                    yield f"data: {repr(json_data['choices'][0]['delta']['content'].encode('utf-8'))}\n\n"
+            except Exception as e:
+                yield f"data: {repr(json_str.encode('utf-8'))}\n\n"
+            
     yield "data: [DONE]\n\n"
-
 
 class ChatQnAService:
     def __init__(self, host="0.0.0.0", port=8000):
