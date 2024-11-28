@@ -68,8 +68,8 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
         if LLM_PROMPT is None:
             if RAG == "enabled":
                 print(f"LLM_PROMPT is None, RAG == True, INPUTS = {inputs['inputs']} \n\n")
-                question_index = inputs["inputs"].find("\n\n### Question:")
-                cleaned_query = inputs["inputs"][:question_index + len("\n\n### Question:")]
+                question_index = inputs["inputs"].find("### Question:")
+                cleaned_query = inputs["inputs"][:question_index + len("### Question:")]
                 print(f"LLM_PROMPT is None, RAG == True, CLEANED_QUERY: {cleaned_query} \n\n")
                 next_inputs["messages"] = [{"role": "user", "content": cleaned_query}]
             else:
@@ -78,8 +78,8 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
         else:
             if RAG == "enabled":
                 print(f"LLM_PROMPT is not None, RAG == True, INPUTS = {inputs['inputs']} \n\n")
-                question_index = inputs["inputs"].find("\n\n### Question:")
-                cleaned_query = inputs["inputs"][:question_index + len("\n\n### Question:")]
+                question_index = inputs["inputs"].find("### Question:")
+                cleaned_query = inputs["inputs"][:question_index + len("### Question:")]
                 print(f"LLM_PROMPT is not None, RAG == True, CLEANED_QUERY: {cleaned_query} \n\n")
                 next_inputs["messages"] = [{"role": "user", "content": cleaned_query}]
             else:
@@ -208,7 +208,6 @@ def align_generator(self, gen, **kwargs):
                 except Exception as e:
                     yield f"data: {repr(json_str.encode('utf-8'))}\n\n"
         else:
-            print("line-------------", line)
             start = line.find("{")
             end = line.rfind("}") + 1
 
