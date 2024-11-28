@@ -49,7 +49,7 @@ LLM_SERVER_HOST_IP = os.getenv("LLM_SERVER_HOST_IP", "0.0.0.0")
 LLM_SERVER_PORT = int(os.getenv("LLM_SERVER_PORT", 80))
 LLM_MODEL = os.getenv("LLM_MODEL", "Intel/neural-chat-7b-v3-3")
 LLM_PROMPT = os.getenv("LLM_PROMPT", None)
-RAG = os.getenv("RAG", False)
+RAG = os.getenv("RAG", None)
 
 
 def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **kwargs):
@@ -66,7 +66,7 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
         next_inputs = {}
         next_inputs["model"] = LLM_MODEL
         if LLM_PROMPT is None:
-            if RAG == True:
+            if RAG == "enabled":
                 print(f"LLM_PROMPT is None, RAG == True, INPUTS = {inputs['inputs']} \n\n")
                 question_index = inputs["inputs"].find("\n\n### Question:")
                 cleaned_query = inputs["inputs"][:question_index + len("\n\n### Question:")]
@@ -76,7 +76,7 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
                 next_inputs["messages"] = [{"role": "user", "content": inputs["inputs"]}]
             
         else:
-            if RAG == True:
+            if RAG == "enabled":
                 print(f"LLM_PROMPT is not None, RAG == True, INPUTS = {inputs['inputs']} \n\n")
                 question_index = inputs["inputs"].find("\n\n### Question:")
                 cleaned_query = inputs["inputs"][:question_index + len("\n\n### Question:")]
